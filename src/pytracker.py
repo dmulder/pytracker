@@ -36,7 +36,7 @@ class TaskNotify:
         env = os.environ
         env['EDITOR'] = which('cat')
         out, _ = Popen([which('re')], stdout=PIPE).communicate()
-        return '\n'.join(out.decode().split('\n')[2:])
+        return '\n'.join(out.decode().split('\n')[1:])
 
     def load_work(self):
         out = self.__dump_re()
@@ -69,7 +69,13 @@ class TaskNotify:
             text = text.replace('\n', ' ').strip()
             Popen([which('re'), text], stdout=PIPE, stderr=PIPE).wait()
         else:
-            pass
+            # Get the filename
+            env = os.environ
+            env['EDITOR'] = which('echo')
+            out, _ = Popen([which('re')], env=env, stdout=PIPE, stderr=PIPE).communicate()
+            fname = out.decode().strip().split('\n')[-1].strip()
+            with open(fname, 'w') as f:
+                f.write(text)
 
     def __modify_re(self, title, text, append=False):
         self.windows.append(Gtk.Window())
