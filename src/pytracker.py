@@ -54,13 +54,18 @@ class TaskNotify:
         self.__modify_re('')
 
     def __modify_re(self, text):
-        self.windows.append(Gtk.Window())
+        self.windows.append(Gtk.Window(title='Task Tracker'))
         win = self.windows[-1]
+        win.set_default_size(500, 350)
         win.connect("destroy", Gtk.main_quit)
+        scrolledwindow = Gtk.ScrolledWindow()
+        scrolledwindow.set_hexpand(True)
+        scrolledwindow.set_vexpand(True)
+        win.add(scrolledwindow)
         textview = Gtk.TextView()
         textbuffer = textview.get_buffer()
         textbuffer.set_text(text)
-        win.add(textview)
+        scrolledwindow.add(textview)
         win.show_all()
         self.load_work()
 
