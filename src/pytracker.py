@@ -14,11 +14,16 @@ class TaskNotify:
         self.notifications = []
         self.windows = []
         self.work = []
+        self.prompt_timeout()
+        GLib.timeout_add(1200*1000, self.prompt_timeout)
+
+    def prompt_timeout(self):
         self.load_work()
         if len(self.work) > 0:
             self.request_work(self.work[0])
         else:
             self.request_task()
+        return True
 
     def __parse_rerc(self, rerc):
         m = re.findall('BULLET\s*=>\s*[\'"]\s*(.)\s*[\'"]\s*,', open(rerc, 'r').read())
