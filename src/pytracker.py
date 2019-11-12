@@ -7,6 +7,28 @@ from subprocess import Popen, PIPE
 from time import sleep
 import os, re
 from shutil import which
+from icalendar import Todo
+
+class Tasks:
+    def __init__(self):
+        self.tasks = []
+        self.task_file = os.path.expanduser('~/.local/share/evolution/tasks/system/tasks.ics')
+
+    def __load_tasks(self, task_file):
+        if os.path.exists(task_file):
+            with open(task_file, 'r') as tf:
+                data = Todo.from_ical(tf.read())
+                self.tasks = [item for item in data.walk('VTODO') if (('PERCENT-COMPLETE' in item.keys() and item['PERCENT-COMPLETE'] != 100) or 'PERCENT-COMPLETE' not in item.keys()) and 'PRIORITY' in item.keys()]
+
+    def highest_priority(self):
+        self.__load_tasks(self.task_file)
+        if len(self.tasks) == 0:
+            return None
+        item = self.tasks[0]
+        for i in self.tasks[1:]:
+            if i['PRIORITY'] > item['PRIORITY']:
+                item = i
+        return item['SUMMARY']
 
 class TaskNotify:
     def __init__(self):
@@ -14,13 +36,17 @@ class TaskNotify:
         self.notifications = []
         self.windows = []
         self.work = []
+        self.tasks = Tasks()
         self.prompt_timeout()
         GLib.timeout_add(1200*1000, self.prompt_timeout)
 
     def prompt_timeout(self):
         self.load_work()
+        next_task = self.tasks.highest_priority()
         if len(self.work) > 0:
             self.request_work(self.work[0])
+        elif next_task:
+            self.suggest_task(next_task)
         else:
             self.request_task()
         return True
@@ -55,11 +81,19 @@ class TaskNotify:
 
     def HandleFinishedTask(self, obj, name):
         self.notifications.pop()
-        self.request_task()
+        next_task = self.tasks.highest_priority()
+        if next_task:
+            self.suggest_task(next_task)
+        else:
+            self.request_task()
 
     def HandleAddTask(self, obj, name):
         self.notifications.pop()
         self.__modify_re('Add', '', append=True)
+
+    def HandleSelectTask(self, obj, name, summary):
+        self.notifications.pop()
+        self.__modify_re('Add', summary, append=True)
 
     def __save_re(self, obj, append, textbuffer):
         s = textbuffer.get_start_iter()
@@ -105,11 +139,10 @@ class TaskNotify:
         win.show_all()
         self.load_work()
 
-    def suggest_task(self):
+    def suggest_task(self, summary):
         self.notifications.append(Notify.Notification.new('Tasks', 'This is the next priority task:\n' + summary))
         notify = self.notifications[-1]
-        notify.add_action('select', 'Select', self.HandleSelectTask)
-        notify.add_action('postpone', 'Delay', self.HandlePostponeTask)
+        notify.add_action('select', 'Select', self.HandleSelectTask, summary)
         notify.add_action('addtask', 'Add Task', self.HandleAddTask)
         notify.set_urgency(2)
         notify.set_timeout(0)
