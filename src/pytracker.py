@@ -32,15 +32,30 @@ class Tasks:
 
 class TaskNotify:
     def __init__(self):
+        self.count = 1
+        self.pomodoro_length = 25
         Notify.init('Task Tracker')
         self.notifications = []
         self.windows = []
         self.work = []
         self.tasks = Tasks()
         self.prompt_timeout()
-        GLib.timeout_add(1200*1000, self.prompt_timeout)
+        GLib.timeout_add_seconds(self.pomodoro_length*60, self.pomodoro)
+
+    def pomodoro(self):
+        time = 15 if self.count % 4 == 0 else 5
+        self.count += 1
+        self.notifications.append(Notify.Notification.new('Tasks', 'Take a %d minute break' % time))
+        notify = self.notifications[-1]
+        notify.set_urgency(2)
+        notify.set_timeout(time*60*1000)
+        notify.show()
+        GLib.timeout_add_seconds(time*60, self.prompt_timeout)
+        return False
 
     def prompt_timeout(self):
+        if len(self.notifications) > 0:
+            self.notifications.pop()
         self.load_work()
         next_task = self.tasks.highest_priority()
         if len(self.work) > 0:
@@ -49,7 +64,8 @@ class TaskNotify:
             self.suggest_task(next_task)
         else:
             self.request_task()
-        return True
+        GLib.timeout_add_seconds(self.pomodoro_length*60, self.pomodoro)
+        return False
 
     def __parse_rerc(self, rerc):
         m = re.findall('BULLET\s*=>\s*[\'"]\s*(.)\s*[\'"]\s*,', open(rerc, 'r').read())
