@@ -116,6 +116,7 @@ class TaskNotify:
         win = self.windows[-1]
         win.set_default_size(500, 350)
         win.connect("destroy", Gtk.main_quit)
+        win.set_border_width(5)
 
         # Header
         hb = Gtk.HeaderBar()
