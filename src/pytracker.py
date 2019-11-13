@@ -132,6 +132,7 @@ class TaskNotify:
         scrolledwindow.set_vexpand(True)
         win.add(scrolledwindow)
         textview = Gtk.TextView()
+        textview.set_wrap_mode(Gtk.WrapMode.WORD)
         textbuffer = textview.get_buffer()
         textbuffer.set_text(text)
         save.connect('clicked', self.__save_re, append, textbuffer)
