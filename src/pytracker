@@ -2,7 +2,8 @@
 from gi import require_version
 require_version('Notify', '0.7')
 require_version('Gtk', '3.0')
-from gi.repository import Notify, GLib, Gtk
+require_version('GSound', '1.0')
+from gi.repository import Notify, GLib, Gtk, GSound
 from subprocess import Popen, PIPE
 from time import sleep
 import os, re
@@ -32,6 +33,8 @@ class Tasks:
 
 class TaskNotify:
     def __init__(self):
+        self.sound_ctx = GSound.Context()
+        self.sound_ctx.init()
         self.count = 1
         self.pomodoro_length = 25
         Notify.init('Task Tracker')
@@ -53,6 +56,8 @@ class TaskNotify:
         return False
 
     def prompt_timeout(self):
+        self.sound_ctx.play_simple({GSound.ATTR_EVENT_ID : "complete",
+                                    GSound.ATTR_CANBERRA_VOLUME: "0.1"})
         if len(self.notifications) > 0:
             self.notifications.pop()
         self.load_work()
