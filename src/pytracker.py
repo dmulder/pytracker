@@ -40,7 +40,6 @@ class TaskNotify:
         self.work = []
         self.tasks = Tasks()
         self.prompt_timeout()
-        GLib.timeout_add_seconds(self.pomodoro_length*60, self.pomodoro)
 
     def pomodoro(self):
         time = 15 if self.count % 4 == 0 else 5
