@@ -37,6 +37,7 @@ class TaskNotify:
         self.sound_ctx.init()
         self.count = 1
         self.pomodoro_length = 25
+        self.tick_counter = self.pomodoro_length * 4 # ticks play for 15 seconds
         Notify.init('Task Tracker')
         self.notifications = []
         self.windows = []
@@ -69,7 +70,17 @@ class TaskNotify:
         else:
             self.request_task()
         GLib.timeout_add_seconds(self.pomodoro_length*60, self.pomodoro)
+        self.tick_clock()
         return False
+
+    def tick_clock(self, *args):
+        if self.tick_counter > 0:
+            self.tick_counter -= 1
+            self.sound_ctx.play_full({GSound.ATTR_EVENT_ID : "clock",
+                                      GSound.ATTR_CANBERRA_VOLUME: "0.1"},
+                                      callback=self.tick_clock)
+        else:
+            self.tick_counter = self.pomodoro_length * 4
 
     def __parse_rerc(self, rerc):
         m = re.findall('BULLET\s*=>\s*[\'"]\s*(.)\s*[\'"]\s*,', open(rerc, 'r').read())
