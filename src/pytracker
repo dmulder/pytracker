@@ -44,6 +44,18 @@ class SystrayTask:
     def make_menu(self, event_button, event_time):
         menu = Gtk.Menu()
 
+        # Show time remaining
+        time = self.tasks.time_remaining()
+        if not self.tasks.paused():
+            display_time = '%d:%d remaining' % (time/60, time%60)
+        else:
+            display_time = 'PAUSED'
+        remaining = Gtk.MenuItem(label=display_time)
+        remaining.show()
+        menu.append(remaining)
+        if self.tasks.paused():
+            remaining.connect('activate', self.change)
+
         # Add a task
         change = Gtk.MenuItem(label="Change task")
         change.show()
@@ -51,10 +63,11 @@ class SystrayTask:
         change.connect('activate', self.change)
 
         # Pause the timer
-        pause = Gtk.MenuItem(label="Pause")
-        pause.show()
-        menu.append(pause)
-        pause.connect('activate', self.pause)
+        if not self.tasks.paused():
+            pause = Gtk.MenuItem(label="Pause")
+            pause.show()
+            menu.append(pause)
+            pause.connect('activate', self.pause)
 
         # add quit item
         quit = Gtk.MenuItem(label="Quit")
@@ -102,6 +115,12 @@ class TaskNotify:
             GLib.source_remove(self.timeout_id)
             self.tick_counter = 0
         self.timeout_id = None
+
+    def paused(self):
+        return self.timeout_id == None
+
+    def time_remaining(self):
+        return self.tick_counter*15
 
     def prompt_timeout(self):
         self.sound_ctx.play_simple({GSound.ATTR_EVENT_ID : "complete",
