@@ -63,11 +63,18 @@ class SystrayTask:
         change.connect('activate', self.change)
 
         # Pause the timer
-        if not self.tasks.paused():
+        if not self.tasks.paused() and not self.tasks.is_pomodoro():
             pause = Gtk.MenuItem(label="Pause")
             pause.show()
             menu.append(pause)
             pause.connect('activate', self.pause)
+
+        # Take a Lunch break (1 hour)
+        if not self.tasks.is_pomodoro():
+            lunch = Gtk.MenuItem(label="Lunch")
+            lunch.show()
+            menu.append(lunch)
+            lunch.connect('activate', self.lunch)
 
         # add quit item
         quit = Gtk.MenuItem(label="Quit")
@@ -84,6 +91,10 @@ class SystrayTask:
     def pause(self, menu_item):
         self.tasks.cancel_timeout()
 
+    def lunch(self, menu_item):
+        self.tasks.cancel_timeout()
+        self.tasks.pomodoro(lunch=True)
+
 class TaskNotify:
     def __init__(self):
         self.sound_ctx = GSound.Context()
@@ -97,10 +108,15 @@ class TaskNotify:
         self.work = []
         self.tasks = Tasks()
         self.timeout_id = None
+        self.pbreak = False
         self.prompt_timeout()
 
-    def pomodoro(self):
-        time = 15 if self.count % 4 == 0 else 5
+    def pomodoro(self, lunch=False):
+        self.pbreak = True
+        if lunch:
+            time = 60
+        else:
+            time = 15 if self.count % 4 == 0 else 5
         self.count += 1
         self.notifications.append(Notify.Notification.new('Tasks', 'Take a %d minute break' % time))
         notify = self.notifications[-1]
@@ -122,7 +138,11 @@ class TaskNotify:
     def time_remaining(self):
         return self.tick_counter*15
 
+    def is_pomodoro(self):
+        return self.pbreak
+
     def prompt_timeout(self):
+        self.pbreak = False
         self.sound_ctx.play_simple({GSound.ATTR_EVENT_ID : "complete",
                                     GSound.ATTR_CANBERRA_VOLUME: "0.1"})
         if len(self.notifications) > 0:
