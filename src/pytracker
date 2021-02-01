@@ -32,16 +32,23 @@ class Tasks:
         return item['SUMMARY']
 
 class SystrayTask:
-    def __init__(self):
+    def __init__(self, tasks):
+        self.tasks = tasks
         self.tray = Gtk.StatusIcon()
         self.tray.set_from_stock(Gtk.STOCK_ADD)
         self.tray.connect('popup-menu', self.on_right_click)
 
     def on_right_click(self, icon, event_button, event_time):
-          self.make_menu(event_button, event_time)
+        self.make_menu(event_button, event_time)
 
     def make_menu(self, event_button, event_time):
         menu = Gtk.Menu()
+
+        # Add a task
+        change = Gtk.MenuItem(label="Change task")
+        change.show()
+        menu.append(change)
+        change.connect('activate', self.change)
 
         # add quit item
         quit = Gtk.MenuItem(label="Quit")
@@ -50,6 +57,10 @@ class SystrayTask:
         quit.connect('activate', sys.exit)
 
         menu.popup(None, None, self.tray.position_menu, self.tray, event_button, event_time)
+
+    def change(self, menu_item):
+        self.tasks.cancel_timeout()
+        self.tasks.prompt_timeout()
 
 class TaskNotify:
     def __init__(self):
@@ -63,6 +74,7 @@ class TaskNotify:
         self.windows = []
         self.work = []
         self.tasks = Tasks()
+        self.timeout_id = None
         self.prompt_timeout()
 
     def pomodoro(self):
@@ -73,8 +85,14 @@ class TaskNotify:
         notify.set_urgency(2)
         notify.set_timeout(time*60*1000)
         notify.show()
-        GLib.timeout_add_seconds(time*60, self.prompt_timeout)
+        self.timeout_id = GLib.timeout_add_seconds(time*60, self.prompt_timeout)
         return False
+
+    def cancel_timeout(self):
+        if self.timeout_id is not None:
+            GLib.source_remove(self.timeout_id)
+            self.tick_counter = 0
+        self.timeout_id = None
 
     def prompt_timeout(self):
         self.sound_ctx.play_simple({GSound.ATTR_EVENT_ID : "complete",
@@ -89,7 +107,7 @@ class TaskNotify:
             self.suggest_task(next_task)
         else:
             self.request_task()
-        GLib.timeout_add_seconds(self.pomodoro_length*60, self.pomodoro)
+        self.timeout_id = GLib.timeout_add_seconds(self.pomodoro_length*60, self.pomodoro)
         self.tick_clock()
         return False
 
@@ -220,6 +238,6 @@ class TaskNotify:
         notify.show()
 
 if __name__ == '__main__':
-    TaskNotify()
-    SystrayTask()
+    tasks = TaskNotify()
+    SystrayTask(tasks)
     GLib.MainLoop().run()
