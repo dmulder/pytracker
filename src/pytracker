@@ -50,6 +50,12 @@ class SystrayTask:
         menu.append(change)
         change.connect('activate', self.change)
 
+        # Pause the timer
+        pause = Gtk.MenuItem(label="Pause")
+        pause.show()
+        menu.append(pause)
+        pause.connect('activate', self.pause)
+
         # add quit item
         quit = Gtk.MenuItem(label="Quit")
         quit.show()
@@ -61,6 +67,9 @@ class SystrayTask:
     def change(self, menu_item):
         self.tasks.cancel_timeout()
         self.tasks.prompt_timeout()
+
+    def pause(self, menu_item):
+        self.tasks.cancel_timeout()
 
 class TaskNotify:
     def __init__(self):
