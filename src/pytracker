@@ -6,7 +6,7 @@ require_version('GSound', '1.0')
 from gi.repository import Notify, GLib, Gtk, GSound
 from subprocess import Popen, PIPE
 from time import sleep
-import os, re
+import os, re, sys
 from shutil import which
 from icalendar import Todo
 
@@ -30,6 +30,26 @@ class Tasks:
             if i['PRIORITY'] > item['PRIORITY']:
                 item = i
         return item['SUMMARY']
+
+class SystrayTask:
+    def __init__(self):
+        self.tray = Gtk.StatusIcon()
+        self.tray.set_from_stock(Gtk.STOCK_ADD)
+        self.tray.connect('popup-menu', self.on_right_click)
+
+    def on_right_click(self, icon, event_button, event_time):
+          self.make_menu(event_button, event_time)
+
+    def make_menu(self, event_button, event_time):
+        menu = Gtk.Menu()
+
+        # add quit item
+        quit = Gtk.MenuItem(label="Quit")
+        quit.show()
+        menu.append(quit)
+        quit.connect('activate', sys.exit)
+
+        menu.popup(None, None, self.tray.position_menu, self.tray, event_button, event_time)
 
 class TaskNotify:
     def __init__(self):
@@ -200,5 +220,6 @@ class TaskNotify:
         notify.show()
 
 if __name__ == '__main__':
-    tasks = TaskNotify()
+    TaskNotify()
+    SystrayTask()
     GLib.MainLoop().run()
