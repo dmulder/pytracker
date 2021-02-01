@@ -47,7 +47,7 @@ class SystrayTask:
         # Show time remaining
         time = self.tasks.time_remaining()
         if not self.tasks.paused():
-            display_time = '%d:%d remaining' % (time/60, time%60)
+            display_time = '%d:%02d remaining' % (time/60, time%60)
         else:
             display_time = 'PAUSED'
         remaining = Gtk.MenuItem(label=display_time)
